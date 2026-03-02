@@ -40,6 +40,8 @@ function employee_dir_get_settings() {
 		'new_hire_days'           => 90,
 		'new_hire_visible_fields' => [ 'department', 'job_title', 'start_date' ],
 		'blocked_users'           => [],
+		'birthday_days_before'    => 7,
+		'birthday_days_after'     => 7,
 	] );
 
 	$saved = get_option( 'employee_dir_settings', [] );
@@ -173,6 +175,22 @@ function employee_dir_register_settings() {
 		'employee-dir-settings',
 		'employee_dir_main'
 	);
+
+	add_settings_field(
+		'employee_dir_birthday_days_before',
+		__( 'Birthday window — days before', 'internal-staff-directory' ),
+		'employee_dir_field_birthday_days_before',
+		'employee-dir-settings',
+		'employee_dir_main'
+	);
+
+	add_settings_field(
+		'employee_dir_birthday_days_after',
+		__( 'Birthday window — days after', 'internal-staff-directory' ),
+		'employee_dir_field_birthday_days_after',
+		'employee-dir-settings',
+		'employee_dir_main'
+	);
 }
 add_action( 'admin_init', 'employee_dir_register_settings' );
 
@@ -206,8 +224,8 @@ function employee_dir_sanitize_settings( $input ) {
 		}
 	}
 
-	// visible_fields: whitelist against known text fields (including social)
-	$allowed_fields          = [ 'department', 'job_title', 'phone', 'office', 'bio', 'linkedin_url', 'start_date', 'whatsapp', 'telegram', 'discord', 'instagram', 'facebook', 'twitter', 'youtube', 'tiktok' ];
+	// visible_fields: whitelist against known text fields (including social and birth_date)
+	$allowed_fields          = [ 'department', 'job_title', 'phone', 'office', 'bio', 'linkedin_url', 'start_date', 'birth_date', 'whatsapp', 'telegram', 'discord', 'instagram', 'facebook', 'twitter', 'youtube', 'tiktok' ];
 	$output['visible_fields'] = [];
 	if ( ! empty( $input['visible_fields'] ) && is_array( $input['visible_fields'] ) ) {
 		foreach ( $input['visible_fields'] as $field ) {
@@ -284,6 +302,14 @@ function employee_dir_sanitize_settings( $input ) {
 		$output['blocked_users'] = array_values( array_unique( $ids ) );
 	}
 
+	// birthday_days_before / birthday_days_after: integer 0–30
+	if ( isset( $input['birthday_days_before'] ) ) {
+		$output['birthday_days_before'] = min( 30, absint( $input['birthday_days_before'] ) );
+	}
+	if ( isset( $input['birthday_days_after'] ) ) {
+		$output['birthday_days_after'] = min( 30, absint( $input['birthday_days_after'] ) );
+	}
+
 	return $output;
 }
 
@@ -356,6 +382,7 @@ function employee_dir_field_visible_fields() {
 		'bio'          => __( 'Bio', 'internal-staff-directory' ),
 		'linkedin_url' => __( 'LinkedIn URL', 'internal-staff-directory' ),
 		'start_date'   => __( 'Start Date / Years at company', 'internal-staff-directory' ),
+		'birth_date'   => __( 'Birthday (month & day)', 'internal-staff-directory' ),
 		'whatsapp'     => __( 'WhatsApp', 'internal-staff-directory' ),
 		'telegram'     => __( 'Telegram', 'internal-staff-directory' ),
 		'discord'      => __( 'Discord', 'internal-staff-directory' ),
@@ -582,6 +609,7 @@ function employee_dir_field_new_hire_visible_fields() {
 		'bio'          => __( 'Bio', 'internal-staff-directory' ),
 		'linkedin_url' => __( 'LinkedIn URL', 'internal-staff-directory' ),
 		'start_date'   => __( 'Start Date / Years at company', 'internal-staff-directory' ),
+		'birth_date'   => __( 'Birthday (month & day)', 'internal-staff-directory' ),
 		'whatsapp'     => __( 'WhatsApp', 'internal-staff-directory' ),
 		'telegram'     => __( 'Telegram', 'internal-staff-directory' ),
 		'discord'      => __( 'Discord', 'internal-staff-directory' ),
@@ -642,6 +670,48 @@ function employee_dir_field_blocked_users() {
 	><?php echo esc_textarea( $value ); ?></textarea>
 	<p class="description">
 		<?php esc_html_e( 'Users listed here (by username or email, one per line) will never appear in the directory.', 'internal-staff-directory' ); ?>
+	</p>
+	<?php
+}
+
+/**
+ * Render the "Birthday window — days before" number input.
+ */
+function employee_dir_field_birthday_days_before() {
+	$settings = employee_dir_get_settings();
+	?>
+	<input
+		type="number"
+		id="employee_dir_birthday_days_before"
+		name="employee_dir_settings[birthday_days_before]"
+		value="<?php echo esc_attr( $settings['birthday_days_before'] ); ?>"
+		min="0"
+		max="30"
+		class="small-text"
+	/>
+	<p class="description">
+		<?php esc_html_e( 'Include employees whose birthday was up to this many days ago. Used by [employee_birthdays]. Default: 7.', 'internal-staff-directory' ); ?>
+	</p>
+	<?php
+}
+
+/**
+ * Render the "Birthday window — days after" number input.
+ */
+function employee_dir_field_birthday_days_after() {
+	$settings = employee_dir_get_settings();
+	?>
+	<input
+		type="number"
+		id="employee_dir_birthday_days_after"
+		name="employee_dir_settings[birthday_days_after]"
+		value="<?php echo esc_attr( $settings['birthday_days_after'] ); ?>"
+		min="0"
+		max="30"
+		class="small-text"
+	/>
+	<p class="description">
+		<?php esc_html_e( 'Include employees whose birthday is up to this many days away. Used by [employee_birthdays]. Default: 7.', 'internal-staff-directory' ); ?>
 	</p>
 	<?php
 }

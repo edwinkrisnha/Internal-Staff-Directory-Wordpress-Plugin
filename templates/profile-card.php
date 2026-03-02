@@ -70,6 +70,11 @@ $is_resigned = ! empty( $profile['resigned'] );
 					<?php esc_html_e( 'Former', 'internal-staff-directory' ); ?>
 				</span>
 			<?php endif; ?>
+			<?php if ( isset( $birthday_offset ) ) : ?>
+				<span class="ed-card__birthday-badge" aria-label="<?php esc_attr_e( 'Birthday', 'internal-staff-directory' ); ?>">
+					<?php echo esc_html( employee_dir_format_birthday_label( $birthday_offset ) ); ?>
+				</span>
+			<?php endif; ?>
 		</h3>
 
 		<?php if ( ! empty( $profile['job_title'] ) && in_array( 'job_title', $visible_fields, true ) ) : ?>
@@ -168,6 +173,23 @@ $is_resigned = ! empty( $profile['resigned'] );
 		if ( $tenure && in_array( 'start_date', $visible_fields, true ) ) :
 		?>
 			<p class="ed-card__tenure"><?php echo esc_html( $tenure ); ?></p>
+		<?php endif; ?>
+
+		<?php if ( ! empty( $profile['birth_date'] ) && in_array( 'birth_date', $visible_fields, true ) ) : ?>
+			<?php
+			// Format MM-DD as a localised month+day string (e.g. "March 15").
+			$bd_parts = explode( '-', $profile['birth_date'] );
+			$bd_label = '';
+			if ( 2 === count( $bd_parts ) ) {
+				try {
+					$bd_dt    = new DateTime( '2000-' . $profile['birth_date'] );
+					$bd_label = $bd_dt->format( 'F j' ); // e.g. "March 15"
+				} catch ( Exception $e ) {} // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch
+			}
+			if ( $bd_label ) :
+			?>
+				<p class="ed-card__birthday"><?php echo esc_html( $bd_label ); ?></p>
+			<?php endif; ?>
 		<?php endif; ?>
 	</div>
 

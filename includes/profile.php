@@ -21,6 +21,7 @@ function employee_dir_fields() {
 		'photo_url'    => __( 'Profile Photo URL', 'internal-staff-directory' ),
 		'linkedin_url' => __( 'LinkedIn URL', 'internal-staff-directory' ),
 		'start_date'   => __( 'Start Date', 'internal-staff-directory' ),
+		'birth_date'   => __( 'Birthday (Month & Day)', 'internal-staff-directory' ),
 		// Social & contact handles
 		'whatsapp'     => __( 'WhatsApp', 'internal-staff-directory' ),
 		'telegram'     => __( 'Telegram', 'internal-staff-directory' ),
@@ -67,6 +68,7 @@ function employee_dir_save_profile( $user_id, array $data ) {
 		'photo_url'    => 'esc_url_raw',
 		'linkedin_url' => 'esc_url_raw',
 		'start_date'   => 'sanitize_text_field',
+		'birth_date'   => 'employee_dir_sanitize_birth_date',
 		// Social & contact
 		'whatsapp'     => 'sanitize_text_field',
 		'telegram'     => 'sanitize_text_field',
@@ -196,6 +198,140 @@ function employee_dir_get_departments() {
  */
 function employee_dir_start_year_floor() {
 	return (int) gmdate( 'Y' ) - 10;
+}
+
+// ---------------------------------------------------------------------------
+// Birthday helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Sanitize a birth date value — accepts MM-DD format only.
+ * Uses checkdate() against a leap year (2000) so Feb 29 is valid.
+ *
+ * @param string $value Raw input.
+ * @return string Validated MM-DD string, or '' on invalid input.
+ */
+function employee_dir_sanitize_birth_date( $value ) {
+	$value = sanitize_text_field( $value );
+	if ( ! preg_match( '/^(\d{2})-(\d{2})$/', $value, $m ) ) {
+		return '';
+	}
+	// Use 2000 (a leap year) so Feb 29 is accepted for people born on that date.
+	if ( ! checkdate( (int) $m[1], (int) $m[2], 2000 ) ) {
+		return '';
+	}
+	return $value;
+}
+
+/**
+ * Returns a human-readable label for a birthday's offset from today.
+ *
+ * @param int $offset Days from today (0 = today, positive = upcoming, negative = past).
+ * @return string e.g. 'Today!', 'In 3 days', '2 days ago'.
+ */
+function employee_dir_format_birthday_label( $offset ) {
+	if ( 0 === $offset ) {
+		return __( 'Today!', 'internal-staff-directory' );
+	}
+	if ( $offset > 0 ) {
+		return sprintf(
+			/* translators: %d: number of days until birthday */
+			_n( 'In %d day', 'In %d days', $offset, 'internal-staff-directory' ),
+			$offset
+		);
+	}
+	$days_ago = abs( $offset );
+	return sprintf(
+		/* translators: %d: number of days since birthday */
+		_n( '%d day ago', '%d days ago', $days_ago, 'internal-staff-directory' ),
+		$days_ago
+	);
+}
+
+/**
+ * Fetch employees whose birthday (MM-DD) falls within the given window.
+ *
+ * The window spans from -$days_before to +$days_after relative to today.
+ * Cross-year boundaries are handled correctly (e.g. Dec 30 → Jan 2).
+ *
+ * Sorting: today first (offset 0), then upcoming (+1…+X), then past (-1…-X).
+ *
+ * @param int   $days_before Days before today to include.
+ * @param int   $days_after  Days after today to include.
+ * @param array $extra_args  Optional WP_User_Query args (e.g. role__in).
+ * @return array[] Each entry: ['user' => WP_User, 'offset' => int, 'profile' => array].
+ */
+function employee_dir_get_birthday_employees( $days_before, $days_after, $extra_args = [] ) {
+	$settings = employee_dir_get_settings();
+
+	// Build window map: MM-DD => offset_from_today.
+	$today  = new DateTime( 'today' );
+	$window = [];
+	for ( $offset = - absint( $days_before ); $offset <= absint( $days_after ); $offset++ ) {
+		$day              = clone $today;
+		$abs              = abs( $offset );
+		$direction        = $offset >= 0 ? "+{$abs} days" : "-{$abs} days";
+		$day->modify( $direction );
+		$window[ $day->format( 'm-d' ) ] = $offset;
+	}
+
+	// Base query: only users who have a birth_date stored.
+	$query_args = [
+		'number'      => -1, // fetch all; PHP-filter handles the window
+		'count_total' => false,
+		'meta_query'  => [ // phpcs:ignore WordPress.DB.SlowDBQuery
+			[
+				'key'     => 'employee_dir_birth_date',
+				'value'   => '',
+				'compare' => '!=',
+			],
+		],
+	];
+
+	// Honour settings role filter.
+	$settings_roles = ! empty( $settings['roles'] ) ? $settings['roles'] : [];
+	$arg_roles      = array_filter( array_map( 'sanitize_key', (array) ( $extra_args['role__in'] ?? [] ) ) );
+	if ( $arg_roles ) {
+		$effective_roles = $settings_roles ? array_values( array_intersect( $settings_roles, $arg_roles ) ) : $arg_roles;
+	} else {
+		$effective_roles = $settings_roles;
+	}
+	if ( ! empty( $effective_roles ) ) {
+		$query_args['role__in'] = $effective_roles;
+	}
+
+	// Exclude blocked users.
+	$blocked = array_filter( array_map( 'absint', (array) $settings['blocked_users'] ) );
+	if ( ! empty( $blocked ) ) {
+		$query_args['exclude'] = $blocked;
+	}
+
+	// phpcs:ignore WordPress.DB.SlowDBQuery -- meta_query is intentional; number=-1 acceptable for internal directories
+	$users = ( new WP_User_Query( $query_args ) )->get_results();
+
+	// PHP-filter: keep only users whose MM-DD birthday falls inside the window.
+	$entries = [];
+	foreach ( $users as $user ) {
+		$birth_mmdd = get_user_meta( $user->ID, 'employee_dir_birth_date', true );
+		if ( ! isset( $window[ $birth_mmdd ] ) ) {
+			continue;
+		}
+		$entries[] = [
+			'user'    => $user,
+			'offset'  => $window[ $birth_mmdd ],
+			'profile' => employee_dir_get_profile( $user->ID ),
+		];
+	}
+
+	// Sort: today (0) first, then upcoming (+1…), then past (−1…).
+	usort( $entries, function ( $a, $b ) use ( $days_after ) {
+		$sort_key = function ( $offset ) use ( $days_after ) {
+			return $offset >= 0 ? $offset : $days_after + 1 + abs( $offset );
+		};
+		return $sort_key( $a['offset'] ) <=> $sort_key( $b['offset'] );
+	} );
+
+	return $entries;
 }
 
 // ---------------------------------------------------------------------------

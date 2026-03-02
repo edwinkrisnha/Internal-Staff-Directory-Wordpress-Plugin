@@ -94,6 +94,49 @@ function employee_dir_show_extra_profile_fields( $user ) {
 					<p class="description">
 						<?php esc_html_e( 'The month this employee joined the company. Used to show tenure on the directory card.', 'internal-staff-directory' ); ?>
 					</p>
+				<?php elseif ( 'birth_date' === $key ) : ?>
+					<?php
+					$raw_birth    = $profile[ $key ] ?? '';
+					$saved_bmonth = '';
+					$saved_bday   = '';
+					if ( preg_match( '/^(\d{2})-(\d{2})$/', $raw_birth, $m ) ) {
+						$saved_bmonth = $m[1];
+						$saved_bday   = $m[2];
+					}
+					$months = [
+						'01' => __( 'January',   'internal-staff-directory' ),
+						'02' => __( 'February',  'internal-staff-directory' ),
+						'03' => __( 'March',     'internal-staff-directory' ),
+						'04' => __( 'April',     'internal-staff-directory' ),
+						'05' => __( 'May',       'internal-staff-directory' ),
+						'06' => __( 'June',      'internal-staff-directory' ),
+						'07' => __( 'July',      'internal-staff-directory' ),
+						'08' => __( 'August',    'internal-staff-directory' ),
+						'09' => __( 'September', 'internal-staff-directory' ),
+						'10' => __( 'October',   'internal-staff-directory' ),
+						'11' => __( 'November',  'internal-staff-directory' ),
+						'12' => __( 'December',  'internal-staff-directory' ),
+					];
+					?>
+					<select name="ed_birth_month" id="ed_birth_month">
+						<option value=""><?php esc_html_e( '— Month —', 'internal-staff-directory' ); ?></option>
+						<?php foreach ( $months as $num => $name ) : ?>
+							<option value="<?php echo esc_attr( $num ); ?>" <?php selected( $saved_bmonth, $num ); ?>>
+								<?php echo esc_html( $name ); ?>
+							</option>
+						<?php endforeach; ?>
+					</select>
+					<select name="ed_birth_day" id="ed_birth_day" style="margin-left:6px;">
+						<option value=""><?php esc_html_e( '— Day —', 'internal-staff-directory' ); ?></option>
+						<?php for ( $d = 1; $d <= 31; $d++ ) : ?>
+							<option value="<?php echo esc_attr( sprintf( '%02d', $d ) ); ?>" <?php selected( $saved_bday, sprintf( '%02d', $d ) ); ?>>
+								<?php echo esc_html( $d ); ?>
+							</option>
+						<?php endfor; ?>
+					</select>
+					<p class="description">
+						<?php esc_html_e( 'Month and day only — year is not stored. Used by the [employee_birthdays] shortcode.', 'internal-staff-directory' ); ?>
+					</p>
 				<?php else : ?>
 					<input
 						type="text"
@@ -143,6 +186,15 @@ function employee_dir_save_extra_profile_fields( $user_id ) {
 			$data['start_date'] = ( $year >= employee_dir_start_year_floor() && $year <= $current_year && $month >= 1 && $month <= 12 )
 				? sprintf( '%04d-%02d', $year, $month )
 				: '';
+		} elseif ( 'birth_date' === $field ) {
+			// Assembled from two separate selects (month + day); no year stored.
+			$bmonth = isset( $_POST['ed_birth_month'] ) ? absint( wp_unslash( $_POST['ed_birth_month'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			$bday   = isset( $_POST['ed_birth_day'] )   ? absint( wp_unslash( $_POST['ed_birth_day'] ) )   : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			$candidate = ( $bmonth >= 1 && $bmonth <= 12 && $bday >= 1 && $bday <= 31 )
+				? sprintf( '%02d-%02d', $bmonth, $bday )
+				: '';
+			// Final validation via sanitizer (handles edge cases like Feb 30).
+			$data['birth_date'] = employee_dir_sanitize_birth_date( $candidate );
 		} elseif ( isset( $_POST[ 'ed_' . $field ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			$data[ $field ] = wp_unslash( $_POST[ 'ed_' . $field ] ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		}

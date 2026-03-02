@@ -4,6 +4,18 @@ All notable changes to Employee Directory will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.20.0] — 2026-03-02
+
+### Added
+- **Birthday field** — a new `birth_date` profile field (month + day only, no year stored) is now available on every employee's WP user edit screen and HR Staff tab. Stored as `employee_dir_birth_date` in `wp_usermeta` with format `MM-DD`. Feb 29 is accepted for leap-year birthdays.
+- **`[employee_birthdays]` shortcode** — renders a card grid of employees whose birthday falls within a configurable window relative to today. Cards are sorted by upcoming birthdays first (today → future), then past birthdays. Supports optional attrs: `days_before`, `days_after`, `role`.
+- **Birthday window settings** — two new fields under Settings → Internal Staff Directory: "Birthday window — days before" (0–30, default 7) and "Birthday window — days after" (0–30, default 7). Shortcode attrs override the global defaults per instance.
+- **Birthday badge on cards** — when a card is rendered via `[employee_birthdays]`, a badge appears next to the employee's name showing "Today!", "In X days", or "X days ago".
+- **Birthday card field (optional)** — `birth_date` is now available in the "Visible card fields" setting for both the main directory and new-hires widget. When enabled, the formatted birthday (e.g. "March 15") is displayed on regular directory cards. Default: off.
+- `employee_dir_sanitize_birth_date( $value )` — validates and sanitizes a `MM-DD` birthday string using `checkdate()` against a leap year.
+- `employee_dir_format_birthday_label( $offset )` — returns "Today!", "In X days", or "X days ago" from an integer day offset.
+- `employee_dir_get_birthday_employees( $days_before, $days_after, $extra_args )` — fetches all users with a `birth_date` set, PHP-filters to the window (cross-year boundary safe), and returns sorted `[user, offset, profile]` entries.
+
 ## [Unreleased]
 
 ### Fixed

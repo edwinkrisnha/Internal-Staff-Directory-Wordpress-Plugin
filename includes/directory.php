@@ -334,6 +334,55 @@ function employee_dir_new_hires_shortcode( $atts ) {
 }
 add_shortcode( 'employee_new_hires', 'employee_dir_new_hires_shortcode' );
 
+/**
+ * [employee_birthdays] shortcode.
+ * Renders a card grid of employees whose birthday (month + day) falls within
+ * the configured window relative to today. No year — privacy-safe.
+ *
+ * Attributes:
+ *   days_before (int)    – Days before today to include. Default: plugin setting.
+ *   days_after  (int)    – Days after today to include. Default: plugin setting.
+ *   role        (string) – Restrict to a single WP role slug.
+ *
+ * @param array $atts Shortcode attributes.
+ * @return string HTML output.
+ */
+function employee_dir_birthdays_shortcode( $atts ) {
+	$atts = shortcode_atts( [
+		'days_before' => '',
+		'days_after'  => '',
+		'role'        => '',
+	], $atts, 'employee_birthdays' );
+
+	$settings    = employee_dir_get_settings();
+	$locked_role = sanitize_text_field( $atts['role'] );
+
+	if ( $settings['require_login'] && ! is_user_logged_in() ) {
+		return '<p class="ed-no-results">' . esc_html__( 'You must be logged in to view the staff directory.', 'internal-staff-directory' ) . '</p>';
+	}
+
+	// Use per-shortcode overrides when provided; fall back to settings defaults.
+	$days_before = '' !== $atts['days_before']
+		? min( 30, absint( $atts['days_before'] ) )
+		: absint( $settings['birthday_days_before'] );
+	$days_after  = '' !== $atts['days_after']
+		? min( 30, absint( $atts['days_after'] ) )
+		: absint( $settings['birthday_days_after'] );
+
+	$extra_args = [];
+	if ( '' !== $locked_role ) {
+		$extra_args['role__in'] = [ $locked_role ];
+	}
+
+	$birthday_entries = employee_dir_get_birthday_employees( $days_before, $days_after, $extra_args );
+	$visible_fields   = $settings['visible_fields'];
+
+	ob_start();
+	include EMPLOYEE_DIR_PLUGIN_DIR . 'templates/birthdays.php';
+	return ob_get_clean();
+}
+add_shortcode( 'employee_birthdays', 'employee_dir_birthdays_shortcode' );
+
 // ---------------------------------------------------------------------------
 // AJAX handler
 // ---------------------------------------------------------------------------
@@ -410,7 +459,8 @@ function employee_dir_enqueue_assets() {
 
 	$is_directory = is_a( $post, 'WP_Post' ) && (
 		has_shortcode( $post->post_content, 'employee_directory' ) ||
-		has_shortcode( $post->post_content, 'employee_new_hires' )
+		has_shortcode( $post->post_content, 'employee_new_hires' ) ||
+		has_shortcode( $post->post_content, 'employee_birthdays' )
 	);
 	$is_profile   = (bool) get_query_var( 'ed_profile' );
 
