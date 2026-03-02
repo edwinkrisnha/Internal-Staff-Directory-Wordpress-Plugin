@@ -44,6 +44,9 @@ function employee_dir_get_profile( $user_id ) {
 	foreach ( array_keys( employee_dir_fields() ) as $field ) {
 		$profile[ $field ] = (string) get_user_meta( $user_id, 'employee_dir_' . $field, true );
 	}
+	// Resigned status — admin-only fields, not part of employee_dir_fields().
+	$profile['resigned']      = get_user_meta( $user_id, 'employee_dir_resigned', true ) === '1';
+	$profile['resigned_date'] = (string) get_user_meta( $user_id, 'employee_dir_resigned_date', true );
 	return $profile;
 }
 
@@ -91,11 +94,31 @@ function employee_dir_save_profile( $user_id, array $data ) {
 		update_user_meta( $user_id, 'employee_dir_hidden_social_fields', $hidden );
 	}
 
+	// Save resigned status.
+	if ( array_key_exists( 'resigned', $data ) ) {
+		update_user_meta( $user_id, 'employee_dir_resigned', $data['resigned'] ? '1' : '' );
+	}
+	if ( array_key_exists( 'resigned_date', $data ) ) {
+		$date = sanitize_text_field( $data['resigned_date'] );
+		$date = preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ? $date : '';
+		update_user_meta( $user_id, 'employee_dir_resigned_date', $date );
+	}
+
 	// Bust the departments cache whenever any profile is saved — department
 	// values may have been added, changed, or removed.
 	if ( array_key_exists( 'department', $data ) ) {
 		delete_transient( 'employee_dir_departments' );
 	}
+}
+
+/**
+ * Returns true when the given user is marked as resigned.
+ *
+ * @param int $user_id
+ * @return bool
+ */
+function employee_dir_is_resigned( $user_id ) {
+	return get_user_meta( $user_id, 'employee_dir_resigned', true ) === '1';
 }
 
 /**

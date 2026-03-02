@@ -113,6 +113,12 @@ function employee_dir_show_extra_profile_fields( $user ) {
 	employee_dir_admin_render_social_fields( $profile, $hidden_social );
 	?>
 	<?php
+	// Employment status section — only admins who can manage other users see this.
+	if ( current_user_can( 'edit_users' ) ) :
+		employee_dir_admin_render_employment_status( $profile );
+	endif;
+	?>
+	<?php
 }
 add_action( 'show_user_profile', 'employee_dir_show_extra_profile_fields' );
 add_action( 'edit_user_profile', 'employee_dir_show_extra_profile_fields' );
@@ -148,6 +154,12 @@ function employee_dir_save_extra_profile_fields( $user_id ) {
 		? array_map( 'sanitize_key', array_keys( $_POST['ed_show_social'] ) ) // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		: [];
 	$data['hidden_social_fields'] = array_values( array_diff( $social_keys, $show_social ) );
+
+	// Resigned status — only admins who manage other users may change this.
+	if ( current_user_can( 'edit_users' ) ) {
+		$data['resigned']      = isset( $_POST['ed_resigned'] ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$data['resigned_date'] = isset( $_POST['ed_resigned_date'] ) ? wp_unslash( $_POST['ed_resigned_date'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+	}
 
 	employee_dir_save_profile( $user_id, $data );
 }
@@ -229,6 +241,55 @@ function employee_dir_admin_render_social_fields( array $profile, array $hidden_
 			</td>
 		</tr>
 		<?php endforeach; ?>
+	</table>
+	<?php
+}
+
+// ---------------------------------------------------------------------------
+// Employment status section (admin-only)
+// ---------------------------------------------------------------------------
+
+/**
+ * Render the Employment Status section on the user profile / edit screen.
+ * Only shown to users who can manage other users (edit_users capability).
+ *
+ * @param array $profile Current profile meta values (includes 'resigned' and 'resigned_date').
+ */
+function employee_dir_admin_render_employment_status( array $profile ) {
+	$is_resigned   = ! empty( $profile['resigned'] );
+	$resigned_date = $profile['resigned_date'] ?? '';
+	?>
+	<h2><?php esc_html_e( 'Employment Status', 'internal-staff-directory' ); ?></h2>
+	<table class="form-table" role="presentation">
+		<tr>
+			<th scope="row"><?php esc_html_e( 'Resigned', 'internal-staff-directory' ); ?></th>
+			<td>
+				<label>
+					<input
+						type="checkbox"
+						name="ed_resigned"
+						value="1"
+						<?php checked( $is_resigned ); ?>
+					/>
+					<?php esc_html_e( 'Mark as resigned (Former Employee)', 'internal-staff-directory' ); ?>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th scope="row">
+				<label for="ed_resigned_date"><?php esc_html_e( 'Resignation Date', 'internal-staff-directory' ); ?></label>
+			</th>
+			<td>
+				<input
+					type="date"
+					id="ed_resigned_date"
+					name="ed_resigned_date"
+					value="<?php echo esc_attr( $resigned_date ); ?>"
+					class="regular-text"
+				/>
+				<p class="description"><?php esc_html_e( 'Optional. Displayed on the employee\'s profile page.', 'internal-staff-directory' ); ?></p>
+			</td>
+		</tr>
 	</table>
 	<?php
 }

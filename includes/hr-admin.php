@@ -137,6 +137,10 @@ function employee_dir_hr_profile_data_from_post( array $post_data ) {
 		: [];
 	$data['hidden_social_fields'] = array_values( array_diff( $social_keys, $show_social ) );
 
+	// Resigned status.
+	$data['resigned']      = ! empty( $post_data['ed_resigned'] );
+	$data['resigned_date'] = isset( $post_data['ed_resigned_date'] ) ? wp_unslash( $post_data['ed_resigned_date'] ) : '';
+
 	return $data;
 }
 
@@ -233,9 +237,10 @@ function employee_dir_hr_render_list_view() {
 			</thead>
 			<tbody>
 				<?php foreach ( $users as $user ) :
-					$profile    = employee_dir_get_profile( $user->ID );
-					$is_blocked = employee_dir_hr_is_user_blocked( $user->ID );
-					$full_name  = trim( $user->first_name . ' ' . $user->last_name ) ?: $user->display_name;
+					$profile     = employee_dir_get_profile( $user->ID );
+					$is_blocked  = employee_dir_hr_is_user_blocked( $user->ID );
+					$is_resigned = ! empty( $profile['resigned'] );
+					$full_name   = trim( $user->first_name . ' ' . $user->last_name ) ?: $user->display_name;
 					$edit_url   = employee_dir_hr_tab_url( [ 'view' => 'edit', 'user_id' => $user->ID ] );
 					$remove_url = wp_nonce_url(
 						admin_url( 'admin-post.php?action=employee_dir_hr_remove_user&user_id=' . $user->ID ),
@@ -258,7 +263,11 @@ function employee_dir_hr_render_list_view() {
 					<td><?php echo esc_html( $profile['department'] ); ?></td>
 					<td><?php echo esc_html( $profile['job_title'] ); ?></td>
 					<td>
-						<?php if ( $is_blocked ) : ?>
+						<?php if ( $is_resigned ) : ?>
+							<span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:12px;background:#fee2e2;color:#7f1d1d;">
+								<?php esc_html_e( 'Resigned', 'internal-staff-directory' ); ?>
+							</span>
+						<?php elseif ( $is_blocked ) : ?>
 							<span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:12px;background:#fef3c7;color:#b45309;">
 								<?php esc_html_e( 'Removed', 'internal-staff-directory' ); ?>
 							</span>
@@ -453,6 +462,7 @@ function employee_dir_hr_render_edit_view( $user_id ) {
 		<?php
 		$hidden_social = employee_dir_get_hidden_social_fields( $user_id );
 		employee_dir_admin_render_social_fields( $profile, $hidden_social );
+		employee_dir_admin_render_employment_status( $profile );
 		?>
 
 		<?php submit_button( __( 'Save Changes', 'internal-staff-directory' ) ); ?>

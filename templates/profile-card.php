@@ -39,6 +39,8 @@ if ( $new_hire_days > 0 && ! empty( $profile['start_date'] ) ) {
 		$is_new_hire = ( $days_since <= $new_hire_days );
 	} catch ( Exception $e ) {} // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch
 }
+
+$is_resigned = ! empty( $profile['resigned'] );
 ?>
 <article class="ed-card" aria-label="<?php echo esc_attr( $full_name ); ?>"<?php echo $article_style; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from esc_attr above. ?>>
 
@@ -61,6 +63,11 @@ if ( $new_hire_days > 0 && ! empty( $profile['start_date'] ) ) {
 			<?php if ( $is_new_hire ) : ?>
 				<span class="ed-card__new-badge" aria-label="<?php esc_attr_e( 'New hire', 'internal-staff-directory' ); ?>">
 					<?php esc_html_e( 'New', 'internal-staff-directory' ); ?>
+				</span>
+			<?php endif; ?>
+			<?php if ( $is_resigned ) : ?>
+				<span class="ed-card__resigned-badge" aria-label="<?php esc_attr_e( 'Former employee', 'internal-staff-directory' ); ?>">
+					<?php esc_html_e( 'Former', 'internal-staff-directory' ); ?>
 				</span>
 			<?php endif; ?>
 		</h3>

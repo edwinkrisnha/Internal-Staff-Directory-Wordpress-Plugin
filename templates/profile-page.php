@@ -10,10 +10,13 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-$full_name = trim( $user->first_name . ' ' . $user->last_name );
+$full_name   = trim( $user->first_name . ' ' . $user->last_name );
 if ( '' === $full_name ) {
 	$full_name = $user->display_name;
 }
+
+$is_resigned   = ! empty( $profile['resigned'] );
+$resigned_date = $profile['resigned_date'] ?? '';
 
 $photo = employee_dir_get_avatar_url( $user, 128 );
 
@@ -44,7 +47,14 @@ if ( $referrer && str_starts_with( $referrer, home_url() ) ) {
 				height="128"
 			/>
 			<div class="ed-profile-page__headline">
-				<h1 class="ed-profile-page__name"><?php echo esc_html( $full_name ); ?></h1>
+				<h1 class="ed-profile-page__name">
+				<?php echo esc_html( $full_name ); ?>
+				<?php if ( $is_resigned ) : ?>
+					<span class="ed-profile-page__resigned-badge">
+						<?php esc_html_e( 'Former Employee', 'internal-staff-directory' ); ?>
+					</span>
+				<?php endif; ?>
+			</h1>
 
 				<?php if ( ! empty( $profile['job_title'] ) ) : ?>
 					<p class="ed-profile-page__title"><?php echo esc_html( $profile['job_title'] ); ?></p>
@@ -133,6 +143,12 @@ if ( $referrer && str_starts_with( $referrer, home_url() ) ) {
 							<span class="ed-profile-page__tenure">(<?php echo esc_html( $start_tenure ); ?>)</span>
 						<?php endif; ?>
 					</dd>
+				</div>
+			<?php endif; ?>
+			<?php if ( $is_resigned && $resigned_date ) : ?>
+				<div class="ed-profile-page__detail-row">
+					<dt><?php esc_html_e( 'Resigned', 'internal-staff-directory' ); ?></dt>
+					<dd><?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $resigned_date ) ) ); ?></dd>
 				</div>
 			<?php endif; ?>
 		</dl>

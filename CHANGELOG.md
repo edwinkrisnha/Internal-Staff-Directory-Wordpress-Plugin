@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- **Resigned employee flag** — admins can mark any employee as resigned from the WP user edit screen or the HR Staff tab edit form. Stores `employee_dir_resigned` (boolean) and `employee_dir_resigned_date` (YYYY-MM-DD) in `wp_usermeta`. Resigned employees remain visible in the directory (not filtered out) but receive a red "Former" badge next to their name on directory cards. On their profile page, a "Former Employee" badge appears inline with their name and an optional "Resigned" date row is shown in the details section.
+- `employee_dir_is_resigned( $user_id )` — helper that returns `true` when a user is marked as resigned.
+- **Employment Status section** on the WP user edit/profile screen — "Resigned" checkbox + "Resignation Date" date picker; gated to users with `edit_users` capability (employees cannot self-resign).
+- **Employment Status section** on the HR Staff tab edit form, using the shared `employee_dir_admin_render_employment_status()` renderer.
+- **HR Staff list view** now shows a red "Resigned" badge in the Status column for resigned employees (replacing "Active"; a user cannot be simultaneously active and resigned in the status display).
+- `employee_dir_admin_render_employment_status( $profile )` — shared renderer for the Employment Status form section; used by both the WP admin screen and the HR Staff tab.
+
 ### Fixed
 - `EMPLOYEE_DIR_VERSION` constant (`1.0.0`) was out of sync with the plugin header version (`1.17.0`), causing CSS/JS assets to be served with a stale cache-busting query string after updates. Constant is now set to `1.17.0`.
 - Avatar fallback mismatch: the directory card used DiceBear while the profile page used `get_avatar_url()`, so the same user could show two different placeholder images. Both templates now call a shared `employee_dir_get_avatar_url()` helper.
