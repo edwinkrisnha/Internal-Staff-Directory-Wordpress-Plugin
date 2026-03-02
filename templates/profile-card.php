@@ -44,7 +44,7 @@ $is_resigned = ! empty( $profile['resigned'] );
 ?>
 <article class="ed-card" aria-label="<?php echo esc_attr( $full_name ); ?>"<?php echo $article_style; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from esc_attr above. ?>>
 
-	<a href="<?php echo esc_url( $profile_url ); ?>" tabindex="-1" aria-hidden="true">
+	<a href="<?php echo esc_url( $profile_url ); ?>" tabindex="-1" aria-hidden="true" class="ed-card__photo-link">
 		<img
 			class="ed-card__photo ed-card__photo--<?php echo esc_attr( $settings['photo_size'] ); ?>"
 			src="<?php echo $photo; // Already escaped above. ?>"

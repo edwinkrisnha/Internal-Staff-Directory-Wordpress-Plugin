@@ -191,12 +191,22 @@
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
+/* Flex item wrapper around the photo — must be flex-shrink:0 so the
+   image is never narrowed by the card's flex algorithm, which would
+   allow a theme "img { max-width:100% }" rule to shrink the photo. */
+.ed-card__photo-link {
+	flex-shrink: 0;
+	display: block;
+	line-height: 0; /* removes inline-baseline gap below the img */
+}
+
 .ed-card__photo {
 	border-radius: 50%;
 	object-fit: cover;
-	flex-shrink: 0;
+	display: block;
 	width: 64px;
 	height: 64px;
+	max-width: none; /* prevent theme "img { max-width:100% }" from overriding */
 	background: #f1f5f9;
 }
 

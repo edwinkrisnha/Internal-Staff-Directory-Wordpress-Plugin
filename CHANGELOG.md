@@ -6,6 +6,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed
+- **Directory card photo wrong size** — `flex-shrink: 0` was placed on `.ed-card__photo` (the `<img>`), which is not a flex item of `.ed-card`. The actual flex child is the `<a>` wrapper, which retained the default `flex-shrink: 1` and could be narrowed by the flex algorithm. Combined with a common theme reset (`img { max-width: 100% }`), this caused photos to render smaller than the configured size (e.g. 67 px instead of 96 px for the Large setting). Fixed by adding a new `.ed-card__photo-link` class to the `<a>` wrapper with `flex-shrink: 0; display: block; line-height: 0;`, and adding `max-width: none` to `.ed-card__photo` to prevent any theme reset from capping the image width.
+
 ### Added
 - **Resigned employee flag** — admins can mark any employee as resigned from the WP user edit screen or the HR Staff tab edit form. Stores `employee_dir_resigned` (boolean) and `employee_dir_resigned_date` (YYYY-MM-DD) in `wp_usermeta`. Resigned employees remain visible in the directory (not filtered out) but receive a red "Former" badge next to their name on directory cards. On their profile page, a "Former Employee" badge appears inline with their name and an optional "Resigned" date row is shown in the details section.
 - `employee_dir_is_resigned( $user_id )` — helper that returns `true` when a user is marked as resigned.
