@@ -16,6 +16,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `employee_dir_format_birthday_label( $offset )` — returns "Today!", "In X days", or "X days ago" from an integer day offset.
 - `employee_dir_get_birthday_employees( $days_before, $days_after, $extra_args )` — fetches all users with a `birth_date` set, PHP-filters to the window (cross-year boundary safe), and returns sorted `[user, offset, profile]` entries.
 
+## [1.21.1] — 2026-03-03
+
+### Fixed
+- **Remove/Restore from directory had no effect** — clicking "Remove" in the HR Staff tab showed the success notice but left the user's status unchanged. Root cause: `register_setting()` attaches the `sanitize_callback` to the `sanitize_option_{name}` filter, which WordPress applies on every `update_option()` call — not only on Settings API form submissions. The remove/restore handlers called `update_option('employee_dir_settings', …)` with `blocked_users` already as an integer array, but the sanitizer's `is_string()` guard (written for the textarea form path) evaluated to `false`, resetting `blocked_users` to `[]` on every save. Fixed by making the sanitizer branch on type: arrays are sanitized directly (`absint` + dedupe), strings continue through the existing login/email → ID resolution path.
+
 ## [1.21.0] — 2026-03-02
 
 ### Changed

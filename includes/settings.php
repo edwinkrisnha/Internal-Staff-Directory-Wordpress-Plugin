@@ -281,25 +281,32 @@ function employee_dir_sanitize_settings( $input ) {
 		}
 	}
 
-	// blocked_users: textarea of usernames/emails → stored as int[] of user IDs.
+	// blocked_users: stored as int[] of user IDs.
+	// Accepts either a textarea string (Settings form) or an int[] (programmatic updates from hr-admin.php).
 	$output['blocked_users'] = [];
-	if ( isset( $input['blocked_users'] ) && is_string( $input['blocked_users'] ) ) {
-		$lines = preg_split( '/[\r\n]+/', $input['blocked_users'] );
-		$ids   = [];
-		foreach ( $lines as $line ) {
-			$entry = trim( sanitize_text_field( $line ) );
-			if ( '' === $entry ) {
-				continue;
+	if ( isset( $input['blocked_users'] ) ) {
+		if ( is_array( $input['blocked_users'] ) ) {
+			// Programmatic path (remove/restore handlers): already an array of IDs.
+			$output['blocked_users'] = array_values( array_unique( array_filter( array_map( 'absint', $input['blocked_users'] ) ) ) );
+		} elseif ( is_string( $input['blocked_users'] ) ) {
+			// Settings form path: textarea of usernames/emails, one per line.
+			$lines = preg_split( '/[\r\n]+/', $input['blocked_users'] );
+			$ids   = [];
+			foreach ( $lines as $line ) {
+				$entry = trim( sanitize_text_field( $line ) );
+				if ( '' === $entry ) {
+					continue;
+				}
+				$user = get_user_by( 'login', $entry );
+				if ( ! $user ) {
+					$user = get_user_by( 'email', $entry );
+				}
+				if ( $user ) {
+					$ids[] = $user->ID;
+				}
 			}
-			$user = get_user_by( 'login', $entry );
-			if ( ! $user ) {
-				$user = get_user_by( 'email', $entry );
-			}
-			if ( $user ) {
-				$ids[] = $user->ID;
-			}
+			$output['blocked_users'] = array_values( array_unique( $ids ) );
 		}
-		$output['blocked_users'] = array_values( array_unique( $ids ) );
 	}
 
 	// birthday_days_before / birthday_days_after: integer 0–30
