@@ -16,6 +16,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `employee_dir_format_birthday_label( $offset )` — returns "Today!", "In X days", or "X days ago" from an integer day offset.
 - `employee_dir_get_birthday_employees( $days_before, $days_after, $extra_args )` — fetches all users with a `birth_date` set, PHP-filters to the window (cross-year boundary safe), and returns sorted `[user, offset, profile]` entries.
 
+## [1.25.1] — 2026-03-04
+
+### Fixed
+- **`[employee_my_profile]` link target** — the name and photo links now point to the WordPress admin edit-profile page (`wp-admin/profile.php`) instead of the public `/staff/{slug}` page, which is the expected destination for a personal header widget.
+
 ## [1.25.0] — 2026-03-04
 
 ### Added

@@ -18,31 +18,13 @@ if ( '' === $full_name ) {
 	$full_name = $user->display_name;
 }
 
-$profile_url = employee_dir_get_profile_url( $user );
+$profile_url = get_edit_profile_url( $user->ID );
 $show_link   = '1' === $atts['link'];
 $show_name   = '1' === $atts['show_name'];
 $show_title  = '1' === $atts['show_title'];
 $has_title   = $show_title && ! empty( $profile['job_title'] );
 ?>
 <div class="ed-my-profile">
-
-	<?php if ( $photo_px > 0 ) :
-		$photo = employee_dir_get_avatar_url( $user, $photo_px );
-	?>
-		<?php if ( $show_link ) : ?>
-		<a href="<?php echo esc_url( $profile_url ); ?>" class="ed-my-profile__photo-link" tabindex="-1" aria-hidden="true">
-		<?php endif; ?>
-			<img
-				class="ed-my-profile__photo ed-my-profile__photo--<?php echo esc_attr( $atts['photo_size'] ); ?>"
-				src="<?php echo esc_url( $photo ); ?>"
-				alt="<?php echo esc_attr( $full_name ); ?>"
-				width="<?php echo esc_attr( $photo_px ); ?>"
-				height="<?php echo esc_attr( $photo_px ); ?>"
-			/>
-		<?php if ( $show_link ) : ?>
-		</a>
-		<?php endif; ?>
-	<?php endif; ?>
 
 	<?php if ( $show_name || $has_title ) : ?>
 	<div class="ed-my-profile__info">
@@ -62,6 +44,24 @@ $has_title   = $show_title && ! empty( $profile['job_title'] );
 		<?php endif; ?>
 
 	</div>
+	<?php endif; ?>
+
+	<?php if ( $photo_px > 0 ) :
+		$photo = employee_dir_get_avatar_url( $user, $photo_px );
+	?>
+		<?php if ( $show_link ) : ?>
+		<a href="<?php echo esc_url( $profile_url ); ?>" class="ed-my-profile__photo-link" tabindex="-1" aria-hidden="true">
+		<?php endif; ?>
+			<img
+				class="ed-my-profile__photo ed-my-profile__photo--<?php echo esc_attr( $atts['photo_size'] ); ?>"
+				src="<?php echo esc_url( $photo ); ?>"
+				alt="<?php echo esc_attr( $full_name ); ?>"
+				width="<?php echo esc_attr( $photo_px ); ?>"
+				height="<?php echo esc_attr( $photo_px ); ?>"
+			/>
+		<?php if ( $show_link ) : ?>
+		</a>
+		<?php endif; ?>
 	<?php endif; ?>
 
 </div>

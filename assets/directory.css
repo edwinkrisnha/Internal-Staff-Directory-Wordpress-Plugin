@@ -981,7 +981,7 @@ span.ed-card__social-link {
 .ed-my-profile {
 	display: inline-flex;
 	align-items: center;
-	gap: 0.5rem;
+	gap: 0.625rem;
 	font-family: inherit;
 	min-width: 0;
 }
@@ -999,7 +999,7 @@ span.ed-card__social-link {
 	max-width: none;
 }
 
-.ed-my-profile__photo--small  { width: 40px; height: 40px; }
+.ed-my-profile__photo--small  { width: 44px; height: 44px; }
 .ed-my-profile__photo--medium { width: 64px; height: 64px; }
 .ed-my-profile__photo--large  { width: 96px; height: 96px; }
 
@@ -1007,11 +1007,12 @@ span.ed-card__social-link {
 	display: flex;
 	flex-direction: column;
 	min-width: 0;
+	text-align: right;
 }
 
 .ed-my-profile__name {
-	font-weight: 600;
-	font-size: 0.875rem;
+	font-weight: 700;
+	font-size: 0.9375rem;
 	line-height: 1.3;
 	white-space: nowrap;
 	overflow: hidden;
@@ -1029,7 +1030,7 @@ span.ed-card__social-link {
 
 .ed-my-profile__title {
 	font-size: 0.75rem;
-	color: #64748b;
+	color: #6366f1;
 	line-height: 1.3;
 	white-space: nowrap;
 	overflow: hidden;
