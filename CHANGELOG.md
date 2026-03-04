@@ -16,6 +16,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `employee_dir_format_birthday_label( $offset )` — returns "Today!", "In X days", or "X days ago" from an integer day offset.
 - `employee_dir_get_birthday_employees( $days_before, $days_after, $extra_args )` — fetches all users with a `birth_date` set, PHP-filters to the window (cross-year boundary safe), and returns sorted `[user, offset, profile]` entries.
 
+## [1.23.0] — 2026-03-04
+
+### Added
+- **Filter & sort bar on HR Staff list** — a toolbar above the staff table lets HR filter by any combination of: free-text search (matches display name, email, username), status (Active / Removed / Resigned), department (populated from existing department values), and role. A sort dropdown controls ordering: Name A→Z (default), Name Z→A, Department A→Z, Newest registered. Active filters are preserved across pagination. A "Reset" link clears all filters.
+- Total count in pagination now reflects the filtered result set (previously used `count_users()` which ignores filters; now uses `WP_User_Query::get_total()`).
+
 ## [1.22.0] — 2026-03-03
 
 ### Added

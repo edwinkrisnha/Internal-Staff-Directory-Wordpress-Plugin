@@ -256,29 +256,209 @@ function employee_dir_hr_render_notices() {
 // ---------------------------------------------------------------------------
 
 /**
- * Render the staff table — all WP users, including blocked ones.
+ * Render the staff table with filter and sort controls.
  * Results are paginated at 50 per page.
  */
 function employee_dir_hr_render_list_view() {
-	$per_page    = 50;
-	$paged       = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	$total_users = count_users();
-	$total       = (int) $total_users['total_users'];
-	$total_pages = (int) ceil( $total / $per_page );
-	$paged       = min( $paged, max( 1, $total_pages ) );
+	// phpcs:disable WordPress.Security.NonceVerification.Recommended
+	$per_page   = 50;
+	$paged      = isset( $_GET['paged'] )     ? max( 1, absint( $_GET['paged'] ) )                            : 1;
+	$search     = isset( $_GET['ed_search'] ) ? sanitize_text_field( wp_unslash( $_GET['ed_search'] ) )       : '';
+	$status     = isset( $_GET['ed_status'] ) ? sanitize_key( $_GET['ed_status'] )                            : '';
+	$department = isset( $_GET['ed_dept'] )   ? sanitize_text_field( wp_unslash( $_GET['ed_dept'] ) )         : '';
+	$role_filter= isset( $_GET['ed_role'] )   ? sanitize_key( $_GET['ed_role'] )                              : '';
+	$sort       = isset( $_GET['ed_sort'] )   ? sanitize_key( $_GET['ed_sort'] )                              : 'name_asc';
+	// phpcs:enable
 
-	$users = get_users( [
-		'orderby' => 'display_name',
-		'order'   => 'ASC',
-		'number'  => $per_page,
-		'offset'  => ( $paged - 1 ) * $per_page,
+	// Validate status against known values; ignore unknown input.
+	$valid_statuses = [ '', 'active', 'removed', 'resigned' ];
+	if ( ! in_array( $status, $valid_statuses, true ) ) {
+		$status = '';
+	}
+
+	// Validate sort against known values.
+	$valid_sorts = [ 'name_asc', 'name_desc', 'dept_asc', 'newest' ];
+	if ( ! in_array( $sort, $valid_sorts, true ) ) {
+		$sort = 'name_asc';
+	}
+
+	// Blocked user IDs — needed for status filtering.
+	$settings    = employee_dir_get_settings();
+	$blocked_ids = array_values( array_filter( array_map( 'absint', (array) $settings['blocked_users'] ) ) );
+
+	// --- Build WP_User_Query args ---
+	$query_args = [
+		'count_total' => true,
+		'number'      => $per_page,
+		'offset'      => ( $paged - 1 ) * $per_page,
+	];
+
+	// Sort.
+	switch ( $sort ) {
+		case 'name_desc':
+			$query_args['orderby'] = 'display_name';
+			$query_args['order']   = 'DESC';
+			break;
+		case 'dept_asc':
+			$query_args['orderby']  = 'meta_value';
+			$query_args['meta_key'] = 'employee_dir_department'; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+			$query_args['order']    = 'ASC';
+			break;
+		case 'newest':
+			$query_args['orderby'] = 'registered';
+			$query_args['order']   = 'DESC';
+			break;
+		default: // name_asc
+			$query_args['orderby'] = 'display_name';
+			$query_args['order']   = 'ASC';
+			break;
+	}
+
+	// Search.
+	if ( '' !== $search ) {
+		$query_args['search']         = '*' . $search . '*';
+		$query_args['search_columns'] = [ 'display_name', 'user_email', 'user_login' ];
+	}
+
+	// Role filter.
+	$valid_roles = array_keys( wp_roles()->roles );
+	if ( '' !== $role_filter && in_array( $role_filter, $valid_roles, true ) ) {
+		$query_args['role'] = $role_filter;
+	}
+
+	// Department filter.
+	if ( '' !== $department ) {
+		$query_args['meta_query'] = [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+			[
+				'key'     => 'employee_dir_department',
+				'value'   => $department,
+				'compare' => '=',
+			],
+		];
+	}
+
+	// Status filter.
+	$force_empty = false;
+	switch ( $status ) {
+		case 'removed':
+			if ( empty( $blocked_ids ) ) {
+				$force_empty = true;
+			} else {
+				$query_args['include'] = $blocked_ids;
+			}
+			break;
+		case 'resigned':
+			$query_args['meta_query'][] = [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+				'key'     => 'employee_dir_resigned',
+				'value'   => '1',
+				'compare' => '=',
+			];
+			break;
+		case 'active':
+			if ( ! empty( $blocked_ids ) ) {
+				$query_args['exclude'] = $blocked_ids;
+			}
+			$query_args['meta_query'][] = [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+				'relation' => 'OR',
+				[
+					'key'     => 'employee_dir_resigned',
+					'compare' => 'NOT EXISTS',
+				],
+				[
+					'key'     => 'employee_dir_resigned',
+					'value'   => '1',
+					'compare' => '!=',
+				],
+			];
+			break;
+	}
+
+	// Run query (or short-circuit for impossible filter combination).
+	if ( $force_empty ) {
+		$users       = [];
+		$total       = 0;
+		$total_pages = 0;
+	} else {
+		$query       = new WP_User_Query( $query_args );
+		$users       = $query->get_results();
+		$total       = (int) $query->get_total();
+		$total_pages = (int) ceil( $total / $per_page );
+		$paged       = min( $paged, max( 1, $total_pages ) );
+	}
+
+	// Params to carry through pagination + filter form.
+	$filter_params = array_filter( [
+		'ed_search' => $search,
+		'ed_status' => $status,
+		'ed_dept'   => $department,
+		'ed_role'   => $role_filter,
+		'ed_sort'   => ( 'name_asc' !== $sort ) ? $sort : '',
 	] );
+
+	$departments = employee_dir_get_departments();
+	$all_roles   = wp_roles()->roles;
+	$has_filters = ( '' !== $search || '' !== $status || '' !== $department || '' !== $role_filter );
 	?>
 	<div style="margin-top:1.5rem;">
 		<a href="<?php echo esc_url( employee_dir_hr_tab_url( [ 'view' => 'create' ] ) ); ?>"
 		   class="button button-primary" style="margin-bottom:1rem;">
 			<?php esc_html_e( '+ Add New Staff Member', 'internal-staff-directory' ); ?>
 		</a>
+
+		<?php /* ---- Filter bar ---- */ ?>
+		<form method="get" action="<?php echo esc_url( admin_url( 'options-general.php' ) ); ?>"
+		      style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:1rem;padding:10px 12px;background:#f6f7f7;border:1px solid #dcdcde;border-radius:3px;">
+			<input type="hidden" name="page" value="employee-dir-settings">
+			<input type="hidden" name="tab"  value="staff">
+
+			<input type="search"
+			       name="ed_search"
+			       value="<?php echo esc_attr( $search ); ?>"
+			       placeholder="<?php esc_attr_e( 'Search name, email…', 'internal-staff-directory' ); ?>"
+			       style="min-width:180px;">
+
+			<select name="ed_status">
+				<option value=""><?php esc_html_e( 'All statuses', 'internal-staff-directory' ); ?></option>
+				<option value="active"   <?php selected( $status, 'active' ); ?>><?php esc_html_e( 'Active', 'internal-staff-directory' ); ?></option>
+				<option value="removed"  <?php selected( $status, 'removed' ); ?>><?php esc_html_e( 'Removed', 'internal-staff-directory' ); ?></option>
+				<option value="resigned" <?php selected( $status, 'resigned' ); ?>><?php esc_html_e( 'Resigned', 'internal-staff-directory' ); ?></option>
+			</select>
+
+			<?php if ( ! empty( $departments ) ) : ?>
+			<select name="ed_dept">
+				<option value=""><?php esc_html_e( 'All departments', 'internal-staff-directory' ); ?></option>
+				<?php foreach ( $departments as $dept ) : ?>
+					<option value="<?php echo esc_attr( $dept ); ?>" <?php selected( $department, $dept ); ?>>
+						<?php echo esc_html( $dept ); ?>
+					</option>
+				<?php endforeach; ?>
+			</select>
+			<?php endif; ?>
+
+			<select name="ed_role">
+				<option value=""><?php esc_html_e( 'All roles', 'internal-staff-directory' ); ?></option>
+				<?php foreach ( $all_roles as $slug => $role ) : ?>
+					<option value="<?php echo esc_attr( $slug ); ?>" <?php selected( $role_filter, $slug ); ?>>
+						<?php echo esc_html( translate_user_role( $role['name'] ) ); ?>
+					</option>
+				<?php endforeach; ?>
+			</select>
+
+			<select name="ed_sort">
+				<option value="name_asc"  <?php selected( $sort, 'name_asc' ); ?>><?php esc_html_e( 'Name A → Z', 'internal-staff-directory' ); ?></option>
+				<option value="name_desc" <?php selected( $sort, 'name_desc' ); ?>><?php esc_html_e( 'Name Z → A', 'internal-staff-directory' ); ?></option>
+				<option value="dept_asc"  <?php selected( $sort, 'dept_asc' ); ?>><?php esc_html_e( 'Department A → Z', 'internal-staff-directory' ); ?></option>
+				<option value="newest"    <?php selected( $sort, 'newest' ); ?>><?php esc_html_e( 'Newest registered', 'internal-staff-directory' ); ?></option>
+			</select>
+
+			<?php submit_button( __( 'Filter', 'internal-staff-directory' ), 'secondary', '', false, [ 'style' => 'margin:0;' ] ); ?>
+
+			<?php if ( $has_filters ) : ?>
+				<a href="<?php echo esc_url( employee_dir_hr_tab_url() ); ?>" style="line-height:2;">
+					<?php esc_html_e( 'Reset', 'internal-staff-directory' ); ?>
+				</a>
+			<?php endif; ?>
+		</form>
 
 		<?php if ( empty( $users ) ) : ?>
 			<p><?php esc_html_e( 'No users found.', 'internal-staff-directory' ); ?></p>
@@ -300,8 +480,8 @@ function employee_dir_hr_render_list_view() {
 					$is_blocked  = employee_dir_hr_is_user_blocked( $user->ID );
 					$is_resigned = ! empty( $profile['resigned'] );
 					$full_name   = trim( $user->first_name . ' ' . $user->last_name ) ?: $user->display_name;
-					$edit_url   = employee_dir_hr_tab_url( [ 'view' => 'edit', 'user_id' => $user->ID ] );
-					$remove_url = wp_nonce_url(
+					$edit_url    = employee_dir_hr_tab_url( [ 'view' => 'edit', 'user_id' => $user->ID ] );
+					$remove_url  = wp_nonce_url(
 						admin_url( 'admin-post.php?action=employee_dir_hr_remove_user&user_id=' . $user->ID ),
 						'employee_dir_hr_remove_' . $user->ID
 					);
@@ -367,7 +547,7 @@ function employee_dir_hr_render_list_view() {
 				</span>
 				<span class="pagination-links">
 					<?php if ( $paged > 1 ) : ?>
-						<a class="prev-page button" href="<?php echo esc_url( employee_dir_hr_tab_url( [ 'paged' => $paged - 1 ] ) ); ?>">
+						<a class="prev-page button" href="<?php echo esc_url( employee_dir_hr_tab_url( array_merge( $filter_params, [ 'paged' => $paged - 1 ] ) ) ); ?>">
 							<span aria-hidden="true">&lsaquo;</span>
 						</a>
 					<?php else : ?>
@@ -384,7 +564,7 @@ function employee_dir_hr_render_list_view() {
 						?>
 					</span>
 					<?php if ( $paged < $total_pages ) : ?>
-						<a class="next-page button" href="<?php echo esc_url( employee_dir_hr_tab_url( [ 'paged' => $paged + 1 ] ) ); ?>">
+						<a class="next-page button" href="<?php echo esc_url( employee_dir_hr_tab_url( array_merge( $filter_params, [ 'paged' => $paged + 1 ] ) ) ); ?>">
 							<span aria-hidden="true">&rsaquo;</span>
 						</a>
 					<?php else : ?>
