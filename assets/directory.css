@@ -162,7 +162,7 @@
 .ed-results {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-	gap: 1.25rem;
+	gap: 1rem;
 	transition: opacity 0.15s ease;
 }
 
