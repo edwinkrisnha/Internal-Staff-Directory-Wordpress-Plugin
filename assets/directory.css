@@ -233,6 +233,11 @@
 .ed-card__photo--medium { width: 64px; height: 64px; }
 .ed-card__photo--large  { width: 96px; height: 96px; }
 
+/* Larger photos in grid view only (list locks to 40px; vertical inherits base sizes) */
+.ed-results:not(.ed-results--list):not(.ed-results--vertical) .ed-card__photo--small  { width: 64px;  height: 64px; }
+.ed-results:not(.ed-results--list):not(.ed-results--vertical) .ed-card__photo--medium { width: 96px;  height: 96px; }
+.ed-results:not(.ed-results--list):not(.ed-results--vertical) .ed-card__photo--large  { width: 128px; height: 128px; }
+
 .ed-card__info {
 	min-width: 0;
 }

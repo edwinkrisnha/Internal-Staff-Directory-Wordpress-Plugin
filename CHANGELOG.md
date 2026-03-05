@@ -4,6 +4,11 @@ All notable changes to Employee Directory will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.26.1] — 2026-03-05
+
+### Changed
+- **Larger grid photos** — profile photos in grid view are now one step larger than the global photo-size setting: Small → 64 px, Medium → 96 px, Large → 128 px. List view retains its fixed 40 px; vertical view is unchanged. Implemented via CSS attribute-scoped overrides with no PHP or JS changes.
+
 ## [1.26.0] — 2026-03-05
 
 ### Added
