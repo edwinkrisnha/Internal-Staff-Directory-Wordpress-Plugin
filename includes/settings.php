@@ -38,6 +38,7 @@ function employee_dir_get_settings() {
 		'message_platform' => 'none',
 		'dicebear_style'   => 'big-smile',
 		'new_hire_days'            => 90,
+		'new_hire_photo_size'      => 'medium',
 		'new_hire_columns'         => 3,
 		'new_hire_visible_fields'  => [ 'department', 'job_title', 'start_date' ],
 		'blocked_users'           => [],
@@ -181,6 +182,14 @@ function employee_dir_register_settings() {
 	);
 
 	add_settings_field(
+		'employee_dir_new_hire_photo_size',
+		__( 'New hire photo size', 'internal-staff-directory' ),
+		'employee_dir_field_new_hire_photo_size',
+		'employee-dir-settings',
+		'employee_dir_main'
+	);
+
+	add_settings_field(
 		'employee_dir_new_hire_columns',
 		__( 'New hire columns', 'internal-staff-directory' ),
 		'employee_dir_field_new_hire_columns',
@@ -306,6 +315,11 @@ function employee_dir_sanitize_settings( $input ) {
 	if ( isset( $input['new_hire_days'] ) ) {
 		$output['new_hire_days'] = min( 365, absint( $input['new_hire_days'] ) );
 	}
+
+	// new_hire_photo_size: whitelist
+	$output['new_hire_photo_size'] = ( isset( $input['new_hire_photo_size'] ) && in_array( $input['new_hire_photo_size'], $valid_sizes, true ) )
+		? $input['new_hire_photo_size']
+		: 'medium';
 
 	// new_hire_visible_fields: same whitelist as visible_fields
 	$output['new_hire_visible_fields'] = [];
@@ -664,6 +678,35 @@ function employee_dir_field_new_hire_days() {
 	/>
 	<p class="description">
 		<?php esc_html_e( 'Employees who joined within this many days get a "New" badge on their card. Set to 0 to disable.', 'internal-staff-directory' ); ?>
+	</p>
+	<?php
+}
+
+/**
+ * Render the "New hire photo size" radio group.
+ */
+function employee_dir_field_new_hire_photo_size() {
+	$settings = employee_dir_get_settings();
+	$current  = $settings['new_hire_photo_size'];
+	$options  = [
+		'small'  => __( 'Small (40 px)', 'internal-staff-directory' ),
+		'medium' => __( 'Medium (64 px)', 'internal-staff-directory' ),
+		'large'  => __( 'Large (96 px)', 'internal-staff-directory' ),
+	];
+	foreach ( $options as $value => $label ) : ?>
+		<label style="display:inline-block; margin-right: 1rem;">
+			<input
+				type="radio"
+				name="employee_dir_settings[new_hire_photo_size]"
+				value="<?php echo esc_attr( $value ); ?>"
+				<?php checked( $current, $value ); ?>
+			/>
+			<?php echo esc_html( $label ); ?>
+		</label>
+	<?php endforeach;
+	?>
+	<p class="description">
+		<?php esc_html_e( 'Profile photo diameter on [employee_new_hires] cards. Independent from the main directory photo size.', 'internal-staff-directory' ); ?>
 	</p>
 	<?php
 }

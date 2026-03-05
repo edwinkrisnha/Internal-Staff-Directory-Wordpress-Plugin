@@ -140,6 +140,7 @@ Go to **Settings → Internal Staff Directory** to configure:
 | Birthday window — days after | 7 | Include birthdays up to this many days ahead in `[employee_birthdays]` (0–30) |
 | Birthday columns | 3 | Number of columns shown in the `[employee_birthdays]` spotlight: 1, 2, or 3. Replaces the horizontal scroll carousel with a grid layout |
 | Grid columns | 3 | Number of columns shown in grid view: 1, 2, or 3. List and vertical views are not affected |
+| New hire photo size | Medium (64 px) | Card photo diameter on `[employee_new_hires]` cards: Small (40 px), Medium (64 px), or Large (96 px). Independent from the main directory photo size |
 | New hire columns | 3 | Number of columns shown in the `[employee_new_hires]` spotlight: 1, 2, or 3 |
 | Available views | Grid, List, Vertical | Which view modes visitors can switch between. The view switcher is hidden when only one is enabled. Grid is always the minimum fallback |
 

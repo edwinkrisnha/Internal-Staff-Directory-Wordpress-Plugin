@@ -4,6 +4,11 @@ All notable changes to Employee Directory will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.30.0] — 2026-03-05
+
+### Added
+- **New hire photo size setting** — a new **New hire photo size** radio group under Settings → Internal Staff Directory controls the card photo diameter (Small 40 px / Medium 64 px / Large 96 px; default Medium) for the `[employee_new_hires]` spotlight, independent from the main directory **Profile photo size** setting. Stored as `new_hire_photo_size` in `employee_dir_settings`. The `profile-card.php` partial now accepts an optional `$card_photo_size` variable from the caller; falls back to `$settings['photo_size']` when not set, keeping all other shortcodes and the main directory unchanged.
+
 ## [1.29.0] — 2026-03-05
 
 ### Added

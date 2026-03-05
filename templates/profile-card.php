@@ -13,7 +13,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 $settings         = employee_dir_get_settings();
 $photo_size_map   = [ 'small' => 40, 'medium' => 64, 'large' => 96 ];
-$photo_px         = $photo_size_map[ $settings['photo_size'] ] ?? 64;
+$_resolved_size   = isset( $card_photo_size ) && isset( $photo_size_map[ $card_photo_size ] ) ? $card_photo_size : $settings['photo_size'];
+$photo_px         = $photo_size_map[ $_resolved_size ] ?? 64;
 $dept_color       = $settings['dept_colors'] ? employee_dir_dept_color( $profile['department'] ?? '' ) : '';
 $message_platform = $settings['message_platform'];
 $profile_url      = employee_dir_get_profile_url( $user );
@@ -46,7 +47,7 @@ $is_resigned = ! empty( $profile['resigned'] );
 
 	<a href="<?php echo esc_url( $profile_url ); ?>" tabindex="-1" aria-hidden="true" class="ed-card__photo-link">
 		<img
-			class="ed-card__photo ed-card__photo--<?php echo esc_attr( $settings['photo_size'] ); ?>"
+			class="ed-card__photo ed-card__photo--<?php echo esc_attr( $_resolved_size ); ?>"
 			src="<?php echo $photo; // Already escaped above. ?>"
 			alt="<?php echo esc_attr( $full_name ); ?>"
 			width="<?php echo esc_attr( $photo_px ); ?>"
