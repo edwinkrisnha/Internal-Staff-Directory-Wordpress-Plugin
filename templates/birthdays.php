@@ -5,6 +5,7 @@
  * Variables provided by employee_dir_birthdays_shortcode():
  *   @var array[]   $birthday_entries  Each entry: ['user' => WP_User, 'offset' => int, 'profile' => array].
  *   @var string[]  $visible_fields    Fields enabled in plugin settings.
+ *   @var int       $birthday_columns  Number of grid columns (1–3).
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
@@ -18,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 	</div>
 
 	<?php if ( $birthday_entries ) : ?>
-		<div class="ed-bday-carousel">
+		<div class="ed-bday-carousel" data-columns="<?php echo esc_attr( $birthday_columns ); ?>">
 			<?php foreach ( $birthday_entries as $entry ) :
 				$user     = $entry['user'];
 				$profile  = $entry['profile'];

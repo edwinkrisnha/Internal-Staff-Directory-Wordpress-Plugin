@@ -782,6 +782,31 @@ span.ed-card__social-link {
 	scrollbar-color: #cbd5e1 transparent;
 }
 
+/* Grid layout override — replaces horizontal scroll when data-columns is set */
+.ed-bday-carousel[data-columns] {
+	display: grid;
+	overflow-x: unset;
+	scroll-snap-type: none;
+	justify-content: normal;
+}
+
+.ed-bday-carousel[data-columns] .ed-bday-card {
+	flex: none;
+	width: auto;
+	scroll-snap-align: none;
+}
+
+.ed-bday-carousel[data-columns="1"] { grid-template-columns: 1fr; }
+.ed-bday-carousel[data-columns="2"] { grid-template-columns: repeat(2, 1fr); }
+.ed-bday-carousel[data-columns="3"] { grid-template-columns: repeat(3, 1fr); }
+
+@media (max-width: 768px) {
+	.ed-bday-carousel[data-columns="2"],
+	.ed-bday-carousel[data-columns="3"] {
+		grid-template-columns: 1fr;
+	}
+}
+
 .ed-bday-carousel::-webkit-scrollbar {
 	height: 4px;
 }

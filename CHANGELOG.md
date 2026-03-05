@@ -4,6 +4,11 @@ All notable changes to Employee Directory will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.29.0] — 2026-03-05
+
+### Added
+- **Birthday columns setting** — a new **Birthday columns** radio group under Settings → Internal Staff Directory controls the number of columns (1, 2, or 3; default 3) in the `[employee_birthdays]` spotlight. When set, the horizontal-scroll carousel is replaced with a CSS grid layout while preserving all card styles (gradients, today glow, sparkle badge). Collapses to 1 column below 768 px. Stored as `birthday_columns` in `employee_dir_settings`.
+
 ## [1.28.0] — 2026-03-05
 
 ### Added

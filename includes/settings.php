@@ -43,6 +43,7 @@ function employee_dir_get_settings() {
 		'blocked_users'           => [],
 		'birthday_days_before'    => 7,
 		'birthday_days_after'     => 7,
+		'birthday_columns'        => 3,
 		'grid_columns'            => 3,
 		'enabled_views'           => [ 'grid', 'list', 'vertical' ],
 	] );
@@ -218,6 +219,14 @@ function employee_dir_register_settings() {
 		'employee-dir-settings',
 		'employee_dir_main'
 	);
+
+	add_settings_field(
+		'employee_dir_birthday_columns',
+		__( 'Birthday columns', 'internal-staff-directory' ),
+		'employee_dir_field_birthday_columns',
+		'employee-dir-settings',
+		'employee_dir_main'
+	);
 }
 add_action( 'admin_init', 'employee_dir_register_settings' );
 
@@ -368,6 +377,11 @@ function employee_dir_sanitize_settings( $input ) {
 	if ( isset( $input['birthday_days_after'] ) ) {
 		$output['birthday_days_after'] = min( 30, absint( $input['birthday_days_after'] ) );
 	}
+
+	// birthday_columns: 1, 2, or 3
+	$output['birthday_columns'] = ( isset( $input['birthday_columns'] ) && in_array( (int) $input['birthday_columns'], $valid_columns, true ) )
+		? (int) $input['birthday_columns']
+		: 3;
 
 	return $output;
 }
@@ -862,6 +876,34 @@ function employee_dir_field_birthday_days_after() {
 	/>
 	<p class="description">
 		<?php esc_html_e( 'Include employees whose birthday is up to this many days away. Used by [employee_birthdays]. Default: 7.', 'internal-staff-directory' ); ?>
+	</p>
+	<?php
+}
+
+/**
+ * Render the "Birthday columns" radio group (1, 2, or 3 columns).
+ */
+function employee_dir_field_birthday_columns() {
+	$settings = employee_dir_get_settings();
+	$current  = (int) $settings['birthday_columns'];
+	$options  = [
+		1 => __( '1 column', 'internal-staff-directory' ),
+		2 => __( '2 columns', 'internal-staff-directory' ),
+		3 => __( '3 columns (default)', 'internal-staff-directory' ),
+	];
+	foreach ( $options as $value => $label ) : ?>
+		<label style="display:inline-block; margin-right: 1rem;">
+			<input
+				type="radio"
+				name="employee_dir_settings[birthday_columns]"
+				value="<?php echo esc_attr( $value ); ?>"
+				<?php checked( $current, $value ); ?>
+			/>
+			<?php echo esc_html( $label ); ?>
+		</label>
+	<?php endforeach; ?>
+	<p class="description">
+		<?php esc_html_e( 'Number of columns shown in the [employee_birthdays] spotlight. The horizontal scroll carousel is replaced with a grid layout.', 'internal-staff-directory' ); ?>
 	</p>
 	<?php
 }

@@ -382,8 +382,9 @@ function employee_dir_birthdays_shortcode( $atts ) {
 		$extra_args['role__in'] = [ $locked_role ];
 	}
 
-	$birthday_entries = employee_dir_get_birthday_employees( $days_before, $days_after, $extra_args );
-	$visible_fields   = $settings['visible_fields'];
+	$birthday_entries  = employee_dir_get_birthday_employees( $days_before, $days_after, $extra_args );
+	$visible_fields    = $settings['visible_fields'];
+	$birthday_columns  = max( 1, min( 3, (int) $settings['birthday_columns'] ) );
 
 	ob_start();
 	include EMPLOYEE_DIR_PLUGIN_DIR . 'templates/birthdays.php';
